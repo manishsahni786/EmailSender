@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import './ContactForm.css'; 
 
 const ContactForm = () => {
   const [formData, setFormData] = useState({
@@ -8,6 +9,9 @@ const ContactForm = () => {
     subject: '',
     message: '',
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -17,15 +21,35 @@ const ContactForm = () => {
     }));
   };
 
+  const validateForm = () => {
+    const { name, email, subject, message } = formData;
+    if (!name || !email || !subject || !message) {
+      setError('All fields are required.');
+      return false;
+    }
+    // Simple email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address.');
+      return false;
+    }
+    setError('');
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateForm()) return;
+    setLoading(true);
     try {
       await axios.post('http://localhost:5000/send', formData);
-      alert('Email sent successfully');
+      setSuccess('Email sent successfully');
       setFormData({ name: '', email: '', subject: '', message: '' });
     } catch (error) {
       console.error('Error sending email:', error);
-      alert('Failed to send email');
+      setError('Failed to send email. Please try again later.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -42,7 +66,7 @@ const ContactForm = () => {
       <input
         type="email"
         name="email"
-        placeholder="Your Email"
+        placeholder="To"
         value={formData.email}
         onChange={handleChange}
         required
@@ -62,7 +86,11 @@ const ContactForm = () => {
         onChange={handleChange}
         required
       />
-      <button type="submit">Send</button>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {success && <p style={{ color: 'green' }}>{success}</p>}
+      <button type="submit" disabled={loading}>
+        {loading ? 'Sending...' : 'Send'}
+      </button>
     </form>
   );
 };
